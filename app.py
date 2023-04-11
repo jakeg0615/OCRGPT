@@ -35,7 +35,7 @@ def ocr():
     prompt = "Can you paraphrase this in a way that is organized, and easy to understand, while mantaining all of the meaning and most of the same wording?"
     gpt_response = generate_response(extracted_text, prompt)
 
-    return jsonify({'extracted_text': extracted_text})
+    return jsonify({'extracted_text': gpt_response})
 
 if __name__ == '__main__':
     app.run()
