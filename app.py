@@ -38,4 +38,4 @@ def ocr():
     return jsonify({'extracted_text': gpt_response})
 
 if __name__ == '__main__':
-    app.run()
+    app.run(port=8080)
