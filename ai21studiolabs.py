@@ -52,8 +52,9 @@ def generate_response(extracted_text, prompt):
   stopSequences=[]
 )
 
-    message = response.choices[0].text.strip()
-    return message
+    # message = response.choices[0].text.strip()
+    # return message
+    return response
 
 @app.route('/ocr', methods=['POST'])
 def ocr():
