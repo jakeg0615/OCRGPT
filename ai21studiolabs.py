@@ -54,6 +54,7 @@ def generate_response(extracted_text, prompt):
 
     # message = response.choices[0].text.strip()
     # return message
+    print(response)
     return response
 
 @app.route('/ocr', methods=['POST'])
