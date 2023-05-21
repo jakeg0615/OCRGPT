@@ -6,7 +6,8 @@ import os
 from flask_cors import CORS
 
 
-openai.api_key = os.getenv("OPENAI_API_KEY", "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")
+# openai.api_key = os.getenv("OPENAI_API_KEY", "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")
+openai.api_key = os.environ["OPENAI_API_KEY"]
 app = Flask(__name__)
 CORS(app)
 
