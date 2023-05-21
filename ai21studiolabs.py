@@ -1,4 +1,5 @@
 import ai21
+import json
 ai21.api_key = 'GvTsQtC9JLj7HKfE4T4GADWq4N6qF4Yt'
 
 from flask import Flask, request, jsonify
