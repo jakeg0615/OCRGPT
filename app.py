@@ -4,9 +4,9 @@ from PIL import Image
 import openai
 import os
 from flask_cors import CORS
+from pdf2image import convert_from_path
 
 
-# openai.api_key = os.getenv("OPENAI_API_KEY", "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")
 openai.api_key = os.environ["OPENAI_API_KEY"]
 # openai.api_key = os.getenv("OPENAI_API_KEY")
 app = Flask(__name__)
@@ -28,10 +28,20 @@ def generate_response(extracted_text, prompt):
     message = response.choices[0].text.strip()
     return message
 
+def pdf_to_image(filename):
+    # convert the pdf to an image; out.jpg is the output image file
+    pages = convert_from_path(filename, 500)
+    for page in pages:
+        page.save('out.jpg', 'JPEG')
+    
+
 @app.route('/ocr', methods=['POST'])
 def ocr():
     file = request.files['image']
-    img = Image.open(file.stream)
+    pdf_to_image(file)
+    #get absolute path of the image
+    img = Image.open('out.jpg')
+    # img = Image.open(file.stream)
     extracted_text = pytesseract.image_to_string(img)
     
     prompt = "Can you paraphrase this in a way that is organized, and easy to understand, while mantaining all of the meaning and most of the same wording?"
