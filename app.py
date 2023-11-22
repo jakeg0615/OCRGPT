@@ -6,7 +6,8 @@ import os
 from flask_cors import CORS
 
 
-openai.api_key = os.getenv("OPENAI_API_KEY", "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")
+# openai.api_key = os.getenv("OPENAI_API_KEY", "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")
+openai.api_key = os.environ["OPENAI_API_KEY"]
 app = Flask(__name__)
 CORS(app)
 
@@ -38,4 +39,5 @@ def ocr():
     return jsonify({'extracted_text': gpt_response})
 
 if __name__ == '__main__':
+    app.debug = True
     app.run(host='0.0.0.0',port=5000)
