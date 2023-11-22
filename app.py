@@ -8,17 +8,18 @@ from flask_cors import CORS
 
 # openai.api_key = os.getenv("OPENAI_API_KEY", "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")
 openai.api_key = os.environ["OPENAI_API_KEY"]
+# openai.api_key = os.getenv("OPENAI_API_KEY")
 app = Flask(__name__)
 CORS(app)
 
 def generate_response(extracted_text, prompt):
     full_prompt = f"{extracted_text} {prompt}"
 
-    
+    ### OCR --> 
     response = openai.Completion.create(
         engine="text-davinci-003",
         prompt=full_prompt,
-        max_tokens=150,
+        max_tokens=2048,
         n=1,
         stop=None,
         temperature=0.5,

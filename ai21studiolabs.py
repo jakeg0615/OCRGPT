@@ -10,7 +10,7 @@ import os
 from flask_cors import CORS
 
 
-openai.api_key = os.getenv("OPENAI_API_KEY", "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")
+openai.api_key = os.environ["OPENAI_API_KEY"]
 app = Flask(__name__)
 CORS(app)
 
@@ -55,8 +55,9 @@ def generate_response(extracted_text, prompt):
 
     # message = response.choices[0].text.strip()
     # return message
-    print(response)
-    return response
+    print(json.dumps(response))
+    return json.dumps(response)
+
 
 @app.route('/ocr', methods=['POST'])
 def ocr():
