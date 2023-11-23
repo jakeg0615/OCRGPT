@@ -32,15 +32,22 @@ def pdf_to_image(filename):
     # convert the pdf to an image; out.jpg is the output image file
     pages = convert_from_path(filename, 500)
     for page in pages:
-        page.save('out.jpg', 'JPEG')
+    # save the image to the current directory and parameterize the filename to match current file name
+        # page.save('out.jpg', 'JPEG')
+    # split filename into directory and file name and remove the extension
+        directory, file = os.path.split(filename)
+        file = os.path.splitext(file)[0]
+        page.save(f'{directory}/{file}.jpg', 'JPEG')
+    # return the directory and file name of the image
+    return f'{directory}/{file}.jpg'
     
 
 @app.route('/ocr', methods=['POST'])
 def ocr():
     file = request.files['image']
-    pdf_to_image(file)
+    img_path = pdf_to_image(file)
     #get absolute path of the image
-    img = Image.open('out.jpg')
+    img = Image.open(img_path)
     # img = Image.open(file.stream)
     extracted_text = pytesseract.image_to_string(img)
     
