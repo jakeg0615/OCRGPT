@@ -5,6 +5,9 @@ import openai
 import os
 from flask_cors import CORS
 from pdf2image import convert_from_path
+from werkzeug.utils import secure_filename
+import tempfile
+import shutil
 
 
 openai.api_key = os.environ["OPENAI_API_KEY"]
@@ -16,43 +19,59 @@ def generate_response(extracted_text, prompt):
     full_prompt = f"{extracted_text} {prompt}"
 
     ### OCR --> 
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=full_prompt,
-        max_tokens=2048,
-        n=1,
-        stop=None,
-        temperature=0.5,
-    )
+    try:
+        response = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=full_prompt,
+            max_tokens=2048,
+            n=1,
+            stop=None,
+            temperature=0.5,
+        )
+        message = response.choices[0].text.strip()
+        return message
+    except openai.error.RateLimitError:
+        # Handle the rate limit error appropriately
+        return "API request limit exceeded. Please try again later."
 
     message = response.choices[0].text.strip()
     return message
 
-def pdf_to_image(filename):
-    # convert the pdf to an image; out.jpg is the output image file
-    pages = convert_from_path(filename, 500)
+def pdf_to_image(file_storage):
+    filename = secure_filename(file_storage.filename)
+    temp_dir = tempfile.mkdtemp()  # Create a temporary directory
+    temp_pdf_path = os.path.join(temp_dir, filename)
+    file_storage.save(temp_pdf_path)
+
+    pages = convert_from_path(temp_pdf_path, 500)
     for page in pages:
-    # save the image to the current directory and parameterize the filename to match current file name
-        # page.save('out.jpg', 'JPEG')
-    # split filename into directory and file name and remove the extension
-        directory, file = os.path.split(filename)
-        file = os.path.splitext(file)[0]
-        page.save(f'{directory}/{file}.jpg', 'JPEG')
-    # return the directory and file name of the image
-    return f'{directory}/{file}.jpg'
+        image_filename = os.path.join(temp_dir, os.path.splitext(filename)[0] + '.jpg')
+        page.save(image_filename, 'JPEG')
+        return image_filename, temp_dir  # Return the image path and the temporary directory
+
+
     
 
 @app.route('/ocr', methods=['POST'])
 def ocr():
+    if 'image' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+
     file = request.files['image']
-    img_path = pdf_to_image(file)
-    #get absolute path of the image
-    img = Image.open(img_path)
-    # img = Image.open(file.stream)
-    extracted_text = pytesseract.image_to_string(img)
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    file = request.files['image']
+    img_path, temp_dir = pdf_to_image(file)  # Receive the image path and temporary directory
     
-    prompt = "Can you paraphrase this in a way that is organized, and easy to understand, while mantaining all of the meaning and most of the same wording?"
+    with Image.open(img_path) as img:
+        extracted_text = pytesseract.image_to_string(img)
+    
+    prompt = "Can you paraphrase this in a way that is organized, and easy to understand, while maintaining all of the meaning and most of the same wording?"
     gpt_response = generate_response(extracted_text, prompt)
+
+    # Clean up: remove the temporary image file and directory
+    os.remove(img_path)
+    shutil.rmtree(temp_dir)  # Remove the temporary directory
 
     return jsonify({'extracted_text': gpt_response})
 
