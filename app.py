@@ -72,8 +72,9 @@ def ocr():
     # Clean up: remove the temporary image file and directory
     os.remove(img_path)
     shutil.rmtree(temp_dir)  # Remove the temporary directory
-
-    return jsonify({'extracted_text': gpt_response})
+    # return gpt_response
+    # return jsonify({'extracted_text': gpt_response}) 
+    return jsonify(gpt_response)
 
 if __name__ == '__main__':
     app.debug = True
