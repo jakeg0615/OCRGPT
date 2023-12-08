@@ -23,6 +23,25 @@ Prerequisites:
     curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
 unzip awscli-bundle.zip
 sudo ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+13. install openAI python library
+    pip install --upgrade openai
+14. install tensorflow
+    pip install tensorflow
+15. install mysql
+    pip install Flask-MySQLdb
+16. install mysql server
+    - mac: brew install mysql
+    - linux: sudo apt-get install mysql-server
+    - windows: https://dev.mysql.com/downloads/installer/
+17. install mysql workbench
+    - mac: brew install mysqlworkbench
+    - linux: sudo apt-get install mysql-workbench
+    - windows: https://dev.mysql.com/downloads/workbench/
+18. install mysql connector
+    pip install mysql-connector-python
+19. install mysql client
+    pip install mysqlclient
+
 
 1. replace YOUR_API_KEY with an openAI API key (at https://platform.openai.com/account/api-keys once you have an account)
 2. replace YOUR_BUCKET_NAME with the name of your s3 bucket

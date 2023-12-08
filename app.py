@@ -6,6 +6,7 @@ import os
 from flask_cors import CORS
 from pdf2image import convert_from_path
 from werkzeug.utils import secure_filename
+from flask_mysqldb import MySQL
 import tempfile
 import shutil
 import boto3
@@ -13,6 +14,16 @@ import logging
 
 app = Flask(__name__)
 CORS(app)
+app.config['MYSQL_HOST'] = 'phirefly-health-db.cqjxqjxqjxqj.us-east-1.rds.amazonaws.com'
+app.config['MYSQL_USER'] = 'your_username'
+app.config['MYSQL_PASSWORD'] = 'your_password'
+app.config['MYSQL_DB'] = 'your_database' 
+
+# Set up mysql database
+mysql = MySQL()
+mysql.init_app(app)  
+
+
 def setup():
     # Set up AWS
     s3 = boto3.client(
@@ -72,7 +83,11 @@ def pdf_to_image(file_storage):
         return image_filename, temp_dir  # Return the image path and the temporary directory
 
 
-    
+def commit_to_db(extracted_text, gpt_response):
+    cursor = mysql.get_db().cursor()
+    cursor.execute("INSERT INTO `ocr` (`id`, `extracted_text`, `gpt_response`) VALUES (NULL, %s, %s)", (extracted_text, gpt_response))
+    mysql.get_db().commit()
+    logging.info(f"OCR and GPT response have been committed to the database")
 
 @app.route('/ocr', methods=['POST'])
 def ocr():
@@ -97,6 +112,9 @@ def ocr():
     shutil.rmtree(temp_dir)  # Remove the temporary directory
     # return gpt_response
     # return jsonify({'extracted_text': gpt_response}) 
+    # insert gpt response into mysql database
+    commit_to_db(extracted_text, gpt_response)
+    
     return jsonify(gpt_response)
 
 if __name__ == '__main__':
