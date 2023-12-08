@@ -11,6 +11,7 @@ import tempfile
 import shutil
 import boto3
 import logging
+import random
 
 app = Flask(__name__)
 CORS(app)
@@ -84,7 +85,8 @@ def pdf_to_image(file_storage):
 
 @app.route('/commit_to_db', methods=['GET', 'POST'])
 def commit_to_db(extracted_text, gpt_response):
-    id = 1
+    # create random id integer
+    id = random.randint(0, 1000000)
     cursor = mysql.connection.cursor()
     # create database if not exists
     cursor.execute("CREATE DATABASE IF NOT EXISTS `phirefly`")
