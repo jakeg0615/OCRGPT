@@ -6,12 +6,24 @@ import os
 from flask_cors import CORS
 from pdf2image import convert_from_path
 from werkzeug.utils import secure_filename
+from flask_mysqldb import MySQL
 import tempfile
 import shutil
 import boto3
+import logging
 
 app = Flask(__name__)
 CORS(app)
+app.config['MYSQL_HOST'] = 'database-2-instance-1.csj0k3ssanrl.us-east-2.rds.amazonaws.com'
+app.config['MYSQL_USER'] = 'admin'
+app.config['MYSQL_PASSWORD'] = 'JMSB0117'
+app.config['MYSQL_DB'] = '' 
+
+# Set up mysql database
+mysql = MySQL()
+mysql.init_app(app)  
+
+
 def setup():
     # Set up AWS
     s3 = boto3.client(
@@ -44,17 +56,21 @@ def generate_response(extracted_text, prompt):
         # Handle the rate limit error appropriately
         return "API request limit exceeded. Please try again later."
 
-    message = response.choices[0].text.strip()
-    return message
+    # message = response.choices[0].text.strip()
+    # return message
 
-def upload_to_s3(file):
+def upload_to_s3(file_path, original_filename):
     bucket_name = 'phirefly-health-bucket-by-user-id'
     s3 = boto3.client('s3')
-    s3.upload_fileobj(file, bucket_name, file.filename)
-
-    print(f"{file} has been uploaded to {bucket_name}")
+    with open(file_path, 'rb') as file:
+        s3.upload_fileobj(file, bucket_name, original_filename)
+        # add logger to indicate success
+        logging.info(f"{original_filename} has been uploaded to {bucket_name}")
 
 def pdf_to_image(file_storage):
+    #fixme: this is a hack, need to find a better way to do this
+    #fixme: utilize fix bug to open file in memory
+    file_storage.stream.seek(0)
     filename = secure_filename(file_storage.filename)
     temp_dir = tempfile.mkdtemp()  # Create a temporary directory
     temp_pdf_path = os.path.join(temp_dir, filename)
@@ -66,8 +82,18 @@ def pdf_to_image(file_storage):
         page.save(image_filename, 'JPEG')
         return image_filename, temp_dir  # Return the image path and the temporary directory
 
-
-    
+@app.route('/commit_to_db', methods=['GET', 'POST'])
+def commit_to_db(extracted_text, gpt_response):
+    id = 1
+    cursor = mysql.connection.cursor()
+    # create database if not exists
+    cursor.execute("CREATE DATABASE IF NOT EXISTS `phirefly`")
+    # create table if not exists
+    cursor.execute("CREATE TABLE IF NOT EXISTS `phirefly`.`ocr` ( `id` INT NOT NULL AUTO_INCREMENT , `extracted_text` TEXT NOT NULL , `gpt_response` TEXT NOT NULL , PRIMARY KEY (`id`)) ENGINE = InnoDB;")
+    cursor.execute("INSERT INTO `phirefly`.`ocr` (`id`, `extracted_text`, `gpt_response`) VALUES (%s, %s, %s)", (id, extracted_text, gpt_response))
+    mysql.connection.commit()
+    logging.info(f"OCR and GPT response have been committed to the database")
+    cursor.close()
 
 @app.route('/ocr', methods=['POST'])
 def ocr():
@@ -78,9 +104,9 @@ def ocr():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
     file = request.files['image']
-    upload_to_s3(file)
-    img_path, temp_dir = pdf_to_image(file)  # Receive the image path and temporary directory
     
+    img_path, temp_dir = pdf_to_image(file)  # Receive the image path and temporary directory
+    upload_to_s3(img_path, file.filename)
     with Image.open(img_path) as img:
         extracted_text = pytesseract.image_to_string(img)
     
@@ -92,6 +118,9 @@ def ocr():
     shutil.rmtree(temp_dir)  # Remove the temporary directory
     # return gpt_response
     # return jsonify({'extracted_text': gpt_response}) 
+    # insert gpt response into mysql database
+    commit_to_db(extracted_text, gpt_response)
+    
     return jsonify(gpt_response)
 
 if __name__ == '__main__':
