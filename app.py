@@ -14,10 +14,10 @@ import logging
 
 app = Flask(__name__)
 CORS(app)
-app.config['MYSQL_HOST'] = 'phirefly-health-db.cqjxqjxqjxqj.us-east-1.rds.amazonaws.com'
-app.config['MYSQL_USER'] = 'your_username'
-app.config['MYSQL_PASSWORD'] = 'your_password'
-app.config['MYSQL_DB'] = 'your_database' 
+app.config['MYSQL_HOST'] = 'database-2-instance-1.csj0k3ssanrl.us-east-2.rds.amazonaws.com'
+app.config['MYSQL_USER'] = 'admin'
+app.config['MYSQL_PASSWORD'] = 'JMSB0117'
+app.config['MYSQL_DB'] = '' 
 
 # Set up mysql database
 mysql = MySQL()
@@ -82,12 +82,18 @@ def pdf_to_image(file_storage):
         page.save(image_filename, 'JPEG')
         return image_filename, temp_dir  # Return the image path and the temporary directory
 
-
+@app.route('/commit_to_db', methods=['GET', 'POST'])
 def commit_to_db(extracted_text, gpt_response):
-    cursor = mysql.get_db().cursor()
-    cursor.execute("INSERT INTO `ocr` (`id`, `extracted_text`, `gpt_response`) VALUES (NULL, %s, %s)", (extracted_text, gpt_response))
-    mysql.get_db().commit()
+    id = 1
+    cursor = mysql.connection.cursor()
+    # create database if not exists
+    cursor.execute("CREATE DATABASE IF NOT EXISTS `phirefly`")
+    # create table if not exists
+    cursor.execute("CREATE TABLE IF NOT EXISTS `phirefly`.`ocr` ( `id` INT NOT NULL AUTO_INCREMENT , `extracted_text` TEXT NOT NULL , `gpt_response` TEXT NOT NULL , PRIMARY KEY (`id`)) ENGINE = InnoDB;")
+    cursor.execute("INSERT INTO `phirefly`.`ocr` (`id`, `extracted_text`, `gpt_response`) VALUES (%s, %s, %s)", (id, extracted_text, gpt_response))
+    mysql.connection.commit()
     logging.info(f"OCR and GPT response have been committed to the database")
+    cursor.close()
 
 @app.route('/ocr', methods=['POST'])
 def ocr():
