@@ -16,8 +16,8 @@ def setup():
     # Set up AWS
     s3 = boto3.client(
         's3',
-        aws_access_key_id='YOUR_ACCESS_KEY',
-        aws_secret_access_key='YOUR_SECRET_KEY',
+        aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+        aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
         region_name='us-east-1'
     )
 
@@ -84,7 +84,7 @@ def ocr():
     with Image.open(img_path) as img:
         extracted_text = pytesseract.image_to_string(img)
     
-    prompt = "Can you paraphrase this in a way that is organized, and easy to understand, while maintaining all of the meaning and most of the same wording?"
+    prompt = "Can you paraphrase this in a way that is organized, and easy to understand, while maintaining all of the meaning and most of the same wording? Please make this comprehensible at the sixth to eighth grade reading level"
     gpt_response = generate_response(extracted_text, prompt)
 
     # Clean up: remove the temporary image file and directory
