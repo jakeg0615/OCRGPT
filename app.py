@@ -21,8 +21,8 @@ def setup():
 
     openai.api_key = os.environ["OPENAI_API_KEY"]
     # openai.api_key = os.getenv("OPENAI_API_KEY")
-    app = Flask(__name__)
-    CORS(app)
+app = Flask(__name__)
+CORS(app)
 
 def generate_response(extracted_text, prompt):
     full_prompt = f"{extracted_text} {prompt}"
