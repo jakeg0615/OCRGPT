@@ -9,6 +9,7 @@ from werkzeug.utils import secure_filename
 import tempfile
 import shutil
 import boto3
+import logging
 
 app = Flask(__name__)
 CORS(app)
@@ -44,17 +45,21 @@ def generate_response(extracted_text, prompt):
         # Handle the rate limit error appropriately
         return "API request limit exceeded. Please try again later."
 
-    message = response.choices[0].text.strip()
-    return message
+    # message = response.choices[0].text.strip()
+    # return message
 
-def upload_to_s3(file):
+def upload_to_s3(file_path, original_filename):
     bucket_name = 'phirefly-health-bucket-by-user-id'
     s3 = boto3.client('s3')
-    s3.upload_fileobj(file, bucket_name, file.filename)
-
-    print(f"{file} has been uploaded to {bucket_name}")
+    with open(file_path, 'rb') as file:
+        s3.upload_fileobj(file, bucket_name, original_filename)
+        # add logger to indicate success
+        logging.info(f"{original_filename} has been uploaded to {bucket_name}")
 
 def pdf_to_image(file_storage):
+    #fixme: this is a hack, need to find a better way to do this
+    #fixme: utilize fix bug to open file in memory
+    file_storage.stream.seek(0)
     filename = secure_filename(file_storage.filename)
     temp_dir = tempfile.mkdtemp()  # Create a temporary directory
     temp_pdf_path = os.path.join(temp_dir, filename)
@@ -78,9 +83,9 @@ def ocr():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
     file = request.files['image']
-    upload_to_s3(file)
-    img_path, temp_dir = pdf_to_image(file)  # Receive the image path and temporary directory
     
+    img_path, temp_dir = pdf_to_image(file)  # Receive the image path and temporary directory
+    upload_to_s3(img_path, file.filename)
     with Image.open(img_path) as img:
         extracted_text = pytesseract.image_to_string(img)
     
