@@ -8,12 +8,21 @@ from pdf2image import convert_from_path
 from werkzeug.utils import secure_filename
 import tempfile
 import shutil
+import boto3
 
+def setup():
+    # Set up AWS
+    s3 = boto3.client(
+        's3',
+        aws_access_key_id='YOUR_ACCESS_KEY',
+        aws_secret_access_key='YOUR_SECRET_KEY',
+        region_name='YOUR_REGION'
+    )
 
-openai.api_key = os.environ["OPENAI_API_KEY"]
-# openai.api_key = os.getenv("OPENAI_API_KEY")
-app = Flask(__name__)
-CORS(app)
+    openai.api_key = os.environ["OPENAI_API_KEY"]
+    # openai.api_key = os.getenv("OPENAI_API_KEY")
+    app = Flask(__name__)
+    CORS(app)
 
 def generate_response(extracted_text, prompt):
     full_prompt = f"{extracted_text} {prompt}"
@@ -36,6 +45,13 @@ def generate_response(extracted_text, prompt):
 
     message = response.choices[0].text.strip()
     return message
+
+def upload_to_s3(file):
+    bucket_name = 'phirefly-health-bucket-by-user-id'
+    s3 = boto3.client('s3')
+    s3.upload_fileobj(file, bucket_name, file.filename)
+
+    print(f"{file} has been uploaded to {bucket_name}")
 
 def pdf_to_image(file_storage):
     filename = secure_filename(file_storage.filename)
