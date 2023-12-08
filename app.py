@@ -77,6 +77,7 @@ def ocr():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
     file = request.files['image']
+    upload_to_s3(file)
     img_path, temp_dir = pdf_to_image(file)  # Receive the image path and temporary directory
     
     with Image.open(img_path) as img:
@@ -93,5 +94,6 @@ def ocr():
     return jsonify(gpt_response)
 
 if __name__ == '__main__':
+    setup()
     app.debug = True
     app.run(host='0.0.0.0',port=5000)
