@@ -10,6 +10,8 @@ import tempfile
 import shutil
 import boto3
 
+app = Flask(__name__)
+CORS(app)
 def setup():
     # Set up AWS
     s3 = boto3.client(
@@ -21,8 +23,7 @@ def setup():
 
     openai.api_key = os.environ["OPENAI_API_KEY"]
     # openai.api_key = os.getenv("OPENAI_API_KEY")
-app = Flask(__name__)
-CORS(app)
+
 
 def generate_response(extracted_text, prompt):
     full_prompt = f"{extracted_text} {prompt}"
